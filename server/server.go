@@ -1,57 +1,34 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 
+	"github.com/blog-api/db"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4"
 )
 
-type post struct {
-	PostID int    `json:"id"`
-	Title  string `json:"title"`
-	Body   string `json:"body"`
-}
-
-func getDbPosts(c *pgx.Conn) ([]byte, error) {
-	p := []post{}
-
-	rows, err := c.Query(context.Background(), "select * from posts;")
-	if err != nil {
-		return nil, err
-	}
-
-	for rows.Next() {
-		var id int
-		var title, body string
-
-		err := rows.Scan(&id, &title, &body)
-		if err != nil {
-			return nil, err
-		}
-
-		p = append(p, post{PostID: id, Title: title, Body: body})
-	}
-
-	data, err := json.Marshal(p)
-
-	return data, err
-}
-
 func getPosts(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	posts, err := getDbPosts(c)
+	posts, err := db.GetPosts(c)
 	if err != nil {
 		log.Println(err.Error())
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`<h1>` + err.Error() + `</h1>`))
 	}
 
-	log.Println(string(posts))
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(posts)
+}
+
+func submitPost(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
+	err := errors.New("Not implemented yet")
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusInternalServerError)
+	w.Write([]byte(`<h1>` + err.Error() + `</h1>`))
 }
 
 func notFound(w http.ResponseWriter, r *http.Request) {
@@ -70,6 +47,9 @@ func RegisterRoutes(r *mux.Router, c *pgx.Conn) {
 
 	api.HandleFunc("/posts", func(w http.ResponseWriter, r *http.Request) {
 		getPosts(w, r, c)
-	})
+	}).Methods("GET")
+	api.HandleFunc("/post", func(w http.ResponseWriter, r *http.Request) {
+		submitPost(w, r, c)
+	}).Methods("POST")
 	api.HandleFunc("*", notFound)
 }
