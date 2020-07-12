@@ -2,7 +2,7 @@ package server
 
 import (
 	"encoding/json"
-	"errors"
+	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
+// getPosts fetches all posts
 func getPosts(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
 	posts, err := db.GetPosts(c)
 	if err != nil {
@@ -24,13 +25,31 @@ func getPosts(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
 	w.Write(posts)
 }
 
+// submitPost submits a post
 func submitPost(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
-	err := errors.New("Not implemented yet")
-	w.Header().Set("Content-Type", "text/html")
-	w.WriteHeader(http.StatusInternalServerError)
-	w.Write([]byte(`<h1>` + err.Error() + `</h1>`))
+  body, err := ioutil.ReadAll(r.Body)
+  if err != nil {
+    log.Println(err.Error())
+  }
+  var p db.Post
+  err = json.Unmarshal(body, &p)
+  if err != nil {
+    log.Println(err.Error())
+  }
+
+  err = db.SubmitPost(c, &p)
+	if err != nil {
+		log.Println(err.Error())
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`<h1>` + err.Error() + `</h1>`))
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+  w.WriteHeader(http.StatusCreated)
 }
 
+// notFound handles not found routes
 func notFound(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusNotFound)

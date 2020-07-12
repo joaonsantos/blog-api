@@ -7,7 +7,7 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-type post struct {
+type Post struct {
 	PostID int    `json:"id"`
 	Title  string `json:"title"`
 	Body   string `json:"body"`
@@ -15,7 +15,7 @@ type post struct {
 
 // GetPosts queries the database for posts and returns them as json
 func GetPosts(c *pgx.Conn) ([]byte, error) {
-	p := []post{}
+	p := []Post{}
 
 	rows, err := c.Query(context.Background(), "select * from posts")
 	if err != nil {
@@ -31,10 +31,20 @@ func GetPosts(c *pgx.Conn) ([]byte, error) {
 			return nil, err
 		}
 
-		p = append(p, post{PostID: id, Title: title, Body: body})
+		p = append(p, Post{PostID: id, Title: title, Body: body})
 	}
 
 	data, err := json.Marshal(p)
 
 	return data, err
+}
+
+
+// SubmitPost writes a post to the database
+func SubmitPost(c *pgx.Conn, p *Post) error {
+  title := p.Title
+  body := p.Body
+
+	_, err := c.Exec(context.Background(), "insert into posts(title,body) values ($1,$2)", title, body)
+  return err
 }
