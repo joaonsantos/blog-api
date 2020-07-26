@@ -27,17 +27,17 @@ func getPosts(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
 
 // submitPost submits a post
 func submitPost(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
-  body, err := ioutil.ReadAll(r.Body)
-  if err != nil {
-    log.Println(err.Error())
-  }
-  var p db.Post
-  err = json.Unmarshal(body, &p)
-  if err != nil {
-    log.Println(err.Error())
-  }
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	var p db.Post
+	err = json.Unmarshal(body, &p)
+	if err != nil {
+		log.Println(err.Error())
+	}
 
-  err = db.SubmitPost(c, &p)
+	err = db.SubmitPost(c, &p)
 	if err != nil {
 		log.Println(err.Error())
 		w.Header().Set("Content-Type", "text/html")
@@ -46,7 +46,7 @@ func submitPost(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-  w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(http.StatusCreated)
 }
 
 // notFound handles not found routes
@@ -60,6 +60,11 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 func RegisterRoutes(r *mux.Router, c *pgx.Conn) {
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]bool{"ok": true})
+	})
+
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(`<h1>` + `Server is up` + `</h1>`))
 	})
 
 	api := r.PathPrefix("/api/v1").Subrouter()
