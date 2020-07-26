@@ -1,5 +1,5 @@
 run: main.go
-	go run main.go
+	./scripts/run-blog.sh
 
 dev: scripts/run-db.sh
 	./scripts/run-db.sh
