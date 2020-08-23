@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"time"
+  "strings"
+  "net/url"
 
 	"github.com/jackc/pgx/v4"
 )
 
 type Post struct {
-	PostID int       `json:"id"`
+	PostID string    `json:"id"`
 	Title  string    `json:"title"`
 	Body   string    `json:"body"`
 	Date   time.Time `json:"date"`
@@ -25,8 +27,7 @@ func GetPosts(c *pgx.Conn) ([]byte, error) {
 	}
 
 	for rows.Next() {
-		var id int
-		var title, body string
+		var id, title, body string
 		var date time.Time
 
 		err := rows.Scan(&id, &title, &body, &date)
@@ -42,12 +43,20 @@ func GetPosts(c *pgx.Conn) ([]byte, error) {
 	return data, err
 }
 
+func formatID(s string) string {
+  fid := strings.ReplaceAll(s, " ", "-")
+  fid = url.PathEscape(fid)
+
+  return strings.ToLower(fid)
+}
+
 // SubmitPost writes a post to the database
 func SubmitPost(c *pgx.Conn, p *Post) error {
 	title := p.Title
 	body := p.Body
 	date := time.Now()
+  id := formatID(title)
 
-	_, err := c.Exec(context.Background(), "insert into posts(title,body, date) values ($1,$2, $3)", title, body, date)
+	_, err := c.Exec(context.Background(), "insert into posts values ($1,$2,$3,$4)", id, title, body, date)
 	return err
 }
