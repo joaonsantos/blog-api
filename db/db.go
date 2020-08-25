@@ -11,11 +11,12 @@ import (
 )
 
 type Post struct {
-	Slug   string    `json:"slug"`
-	Title  string    `json:"title"`
-	Body   string    `json:"body"`
-	Author string    `json:"author"`
-	Date   time.Time `json:"date"`
+	Slug    string    `json:"slug"`
+	Title   string    `json:"title"`
+	Body    string    `json:"body"`
+	Summary string    `json:"summary"`
+	Author  string    `json:"author"`
+	Date    time.Time `json:"date"`
 }
 
 // GetPost queries the database for a post and returns it as json
@@ -28,15 +29,15 @@ func GetPost(c *pgx.Conn, s string) ([]byte, error) {
 	}
 
 	for rows.Next() {
-		var slug, title, body, author string
+		var slug, title, body, summary, author string
 		var date time.Time
 
-		err := rows.Scan(&slug, &title, &body, &author, &date)
+		err := rows.Scan(&slug, &title, &body, &summary, &author, &date)
 		if err != nil {
 			return nil, err
 		}
 
-    p = append(p, Post{Slug: slug, Title: title, Body: body, Author: author, Date: date})
+    p = append(p, Post{Slug: slug, Title: title, Body: body, Summary: summary, Author: author, Date: date})
 	}
 
 	data, err := json.Marshal(p)
@@ -48,21 +49,21 @@ func GetPost(c *pgx.Conn, s string) ([]byte, error) {
 func GetPosts(c *pgx.Conn) ([]byte, error) {
 	p := []Post{}
 
-	rows, err := c.Query(context.Background(), "select * from posts")
+	rows, err := c.Query(context.Background(), "select slug, title, summary, author, date from posts")
 	if err != nil {
 		return nil, err
 	}
 
 	for rows.Next() {
-		var slug, title, body, author string
+		var slug, title, summary, author string
 		var date time.Time
 
-		err := rows.Scan(&slug, &title, &body, &author, &date)
+		err := rows.Scan(&slug, &title, &summary, &author, &date)
 		if err != nil {
 			return nil, err
 		}
 
-    p = append(p, Post{Slug: slug, Title: title, Body: body, Author: author, Date: date})
+    p = append(p, Post{Slug: slug, Title: title, Summary: summary, Author: author, Date: date})
 	}
 
 	data, err := json.Marshal(p)
@@ -81,11 +82,12 @@ func genSlug(s string) string {
 func SubmitPost(c *pgx.Conn, p *Post) error {
 	title := p.Title
 	body := p.Body
+	summary := p.Summary
   author := p.Author
 
 	date := time.Now()
   slug := genSlug(title)
 
-	_, err := c.Exec(context.Background(), "insert into posts values ($1,$2,$3,$4,$5)", slug, title, body, author, date)
+	_, err := c.Exec(context.Background(), "insert into posts values ($1,$2,$3,$4,$5,$6)", slug, title, body, summary, author, date)
 	return err
 }
