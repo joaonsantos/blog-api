@@ -11,6 +11,22 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
+// getPost fetches a post by post slug
+func getPost(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
+  vars := mux.Vars(r)
+  slug := vars["slug"]
+	post, err := db.GetPost(c, slug)
+	if err != nil {
+		log.Println(err.Error())
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`<h1>` + err.Error() + `</h1>`))
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(post)
+}
+
 // getPosts fetches all posts
 func getPosts(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
 	posts, err := db.GetPosts(c)
@@ -71,6 +87,9 @@ func RegisterRoutes(r *mux.Router, c *pgx.Conn) {
 
 	api.HandleFunc("/posts", func(w http.ResponseWriter, r *http.Request) {
 		getPosts(w, r, c)
+	}).Methods("GET")
+	api.HandleFunc("/post/{slug}", func(w http.ResponseWriter, r *http.Request) {
+		getPost(w, r, c)
 	}).Methods("GET")
 	api.HandleFunc("/post", func(w http.ResponseWriter, r *http.Request) {
 		submitPost(w, r, c)
