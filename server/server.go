@@ -11,8 +11,8 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-// getPost fetches a post by post slug
-func getPost(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
+// getPostInfo fetches a post info by post slug
+func getPostInfo(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
   vars := mux.Vars(r)
   slug := vars["slug"]
 	post, err := db.GetPost(c, slug)
@@ -27,8 +27,8 @@ func getPost(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
 	w.Write(post)
 }
 
-// getPosts fetches all posts
-func getPosts(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
+// getPostsInfo fetches all posts info
+func getPostsInfo(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
 	posts, err := db.GetPosts(c)
 	if err != nil {
 		log.Println(err.Error())
@@ -41,8 +41,8 @@ func getPosts(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
 	w.Write(posts)
 }
 
-// submitPost submits a post
-func submitPost(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
+// submitPostInfo submits a post info
+func submitPostInfo(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err.Error())
@@ -86,13 +86,13 @@ func RegisterRoutes(r *mux.Router, c *pgx.Conn) {
 	api := r.PathPrefix("/api/v1").Subrouter()
 
 	api.HandleFunc("/posts", func(w http.ResponseWriter, r *http.Request) {
-		getPosts(w, r, c)
+		getPostsInfo(w, r, c)
 	}).Methods("GET")
 	api.HandleFunc("/post/{slug}", func(w http.ResponseWriter, r *http.Request) {
-		getPost(w, r, c)
+		getPostInfo(w, r, c)
 	}).Methods("GET")
 	api.HandleFunc("/post", func(w http.ResponseWriter, r *http.Request) {
-		submitPost(w, r, c)
+		submitPostInfo(w, r, c)
 	}).Methods("POST")
 	api.HandleFunc("*", notFound)
 }

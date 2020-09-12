@@ -1,4 +1,4 @@
-run: main.go
+run: 
 	./scripts/run-blog.sh
 
 dev: scripts/run-db.sh
