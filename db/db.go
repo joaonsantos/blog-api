@@ -18,7 +18,7 @@ type Post struct {
 	Date    time.Time `json:"date"`
 }
 
-// GetPost queries the database for a post and returns it as json
+// GetPost queries the database for a post info and returns it as json
 func GetPost(c *pgx.Conn, s string) ([]byte, error) {
 	p := []Post{}
 
@@ -44,7 +44,7 @@ func GetPost(c *pgx.Conn, s string) ([]byte, error) {
 	return data, err
 }
 
-// GetPosts queries the database for posts and returns them as json
+// GetPosts queries the database for posts info and returns them as json
 func GetPosts(c *pgx.Conn) ([]byte, error) {
 	p := []Post{}
 
@@ -77,7 +77,7 @@ func genSlug(s string) string {
   return strings.ToLower(slug)
 }
 
-// SubmitPost writes a post to the database
+// SubmitPost writes a post info to the database
 func SubmitPost(c *pgx.Conn, p *Post) error {
 	title := p.Title
 	summary := p.Summary
