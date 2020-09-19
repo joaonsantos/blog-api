@@ -11,32 +11,34 @@ import (
 )
 
 type Post struct {
-	Slug    string    `json:"slug"`
-	Title   string    `json:"title"`
-	Summary string    `json:"summary"`
-	Author  string    `json:"author"`
-	Date    time.Time `json:"date"`
+	Slug      string    `json:"slug"`
+	Title     string    `json:"title"`
+	Summary   string    `json:"summary"`
+	Author    string    `json:"author"`
+	ReadTime  int  `json:"readTime"`
+	Date      time.Time `json:"date"`
 }
 
 // GetPost queries the database for a post info and returns it as json
 func GetPost(c *pgx.Conn, s string) ([]byte, error) {
 	p := []Post{}
 
-	rows, err := c.Query(context.Background(), "select slug, title, summary, author, date from posts where slug=$1", s)
+	rows, err := c.Query(context.Background(), "select slug, title, summary, author, readTime, date from posts where slug=$1", s)
 	if err != nil {
 		return nil, err
 	}
 
 	for rows.Next() {
 		var slug, title, summary, author string
+    var readTime int
 		var date time.Time
 
-		err := rows.Scan(&slug, &title, &summary, &author, &date)
+		err := rows.Scan(&slug, &title, &summary, &author, &readTime, &date)
 		if err != nil {
 			return nil, err
 		}
 
-    p = append(p, Post{Slug: slug, Title: title, Summary: summary, Author: author, Date: date})
+    p = append(p, Post{Slug: slug, Title: title, Summary: summary, Author: author, ReadTime: readTime, Date: date})
 	}
 
 	data, err := json.Marshal(p)
@@ -48,21 +50,22 @@ func GetPost(c *pgx.Conn, s string) ([]byte, error) {
 func GetPosts(c *pgx.Conn) ([]byte, error) {
 	p := []Post{}
 
-	rows, err := c.Query(context.Background(), "select slug, title, summary, author, date from posts")
+	rows, err := c.Query(context.Background(), "select slug, title, summary, author, readTime, date from posts")
 	if err != nil {
 		return nil, err
 	}
 
 	for rows.Next() {
 		var slug, title, summary, author string
+    var readTime int
 		var date time.Time
 
-		err := rows.Scan(&slug, &title, &summary, &author, &date)
+		err := rows.Scan(&slug, &title, &summary, &author, &readTime, &date)
 		if err != nil {
 			return nil, err
 		}
 
-    p = append(p, Post{Slug: slug, Title: title, Summary: summary, Author: author, Date: date})
+    p = append(p, Post{Slug: slug, Title: title, Summary: summary, Author: author, ReadTime: readTime, Date: date})
 	}
 
 	data, err := json.Marshal(p)
@@ -83,9 +86,10 @@ func SubmitPost(c *pgx.Conn, p *Post) error {
 	summary := p.Summary
   author := p.Author
 
+	readTime := p.ReadTime
 	date := time.Now()
   slug := genSlug(title)
 
-	_, err := c.Exec(context.Background(), "insert into posts values ($1,$2,$3,$4,$5)", slug, title, summary, author, date)
+	_, err := c.Exec(context.Background(), "insert into posts values ($1,$2,$3,$4,$5,$6)", slug, title, summary, author, readTime, date)
 	return err
 }
