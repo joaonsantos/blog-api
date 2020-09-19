@@ -5,27 +5,12 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/blog-api/db"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4"
 )
-
-// getPostContent fetches a post content by post slug
-func getPostContent(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
-  vars := mux.Vars(r)
-  slug := vars["slug"]
-  dat, err := ioutil.ReadFile("./posts/" + slug + "/index.md")
-	if err != nil {
-		log.Println(err.Error())
-		w.Header().Set("Content-Type", "text/html")
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`<h1>` + err.Error() + `</h1>`))
-	}
-
-	w.Header().Set("Content-Type", "text/markdown")
-	w.Write(dat)
-}
 
 // getPostInfo fetches a post info by post slug
 func getPostInfo(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
@@ -81,6 +66,49 @@ func submitPostInfo(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+// getPostContent fetches a post content by post slug
+func getPostContent(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
+  vars := mux.Vars(r)
+  slug := vars["slug"]
+  dat, err := ioutil.ReadFile("./posts/" + slug + "/index.md")
+	if err != nil {
+		log.Println(err.Error())
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`<h1>` + err.Error() + `</h1>`))
+	}
+
+	w.Header().Set("Content-Type", "text/markdown")
+	w.Write(dat)
+}
+
+// postPostContent creates a file with post content given a post slug
+func postPostContent(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
+  vars := mux.Vars(r)
+  slug := vars["slug"]
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Println(err.Error())
+	}
+
+  err = os.MkdirAll("./posts/" + slug, 0644)
+  if err != nil {
+		log.Println(err.Error())
+  }
+
+  err = ioutil.WriteFile("./posts/" + slug + "/index.md", body, 0644)
+	if err != nil {
+		log.Println(err.Error())
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`<h1>` + err.Error() + `</h1>`))
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+}
+
+
 // notFound handles not found routes
 func notFound(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
@@ -115,5 +143,8 @@ func RegisterRoutes(r *mux.Router, c *pgx.Conn) {
 	api.HandleFunc("/content/{slug}", func(w http.ResponseWriter, r *http.Request) {
 		getPostContent(w, r, c)
 	}).Methods("GET")
+	api.HandleFunc("/content/{slug}", func(w http.ResponseWriter, r *http.Request) {
+		postPostContent(w, r, c)
+	}).Methods("POST")
 	api.HandleFunc("*", notFound)
 }
