@@ -91,7 +91,7 @@ func postPostContent(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
 		log.Println(err.Error())
 	}
 
-  err = os.MkdirAll("./posts/" + slug, 0644)
+  err = os.MkdirAll("./posts/" + slug, 0744)
   if err != nil {
 		log.Println(err.Error())
   }
