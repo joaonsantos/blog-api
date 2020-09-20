@@ -20,10 +20,11 @@ func main() {
 
 	srv := &http.Server{
 		Handler: loggedRouter,
-		Addr:    "127.0.0.1:8000",
-		// Good practice: enforce timeouts for servers you create!
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
+		Addr:    "0.0.0.0:8000",
+		// Good practice to set timeouts to avoid Slowloris attacks.
+		WriteTimeout: time.Second * 15,
+		ReadTimeout:  time.Second * 15,
+		IdleTimeout:  time.Second * 60,
 	}
 	log.Printf("Server started at adress http://%s\n", srv.Addr)
 	log.Fatal(srv.ListenAndServe())
