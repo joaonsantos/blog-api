@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/blog-api/db"
+  "github.com/blog-api/pkg/db"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4"
 )
@@ -70,7 +70,7 @@ func submitPostInfo(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
 func getPostContent(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
   vars := mux.Vars(r)
   slug := vars["slug"]
-  dat, err := ioutil.ReadFile("./posts/" + slug + "/index.md")
+  dat, err := ioutil.ReadFile("/opt/blog-api/posts/" + slug + "/index.md")
 	if err != nil {
 		log.Println(err.Error())
 		w.Header().Set("Content-Type", "text/html")
@@ -91,12 +91,12 @@ func postPostContent(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
 		log.Println(err.Error())
 	}
 
-  err = os.MkdirAll("./posts/" + slug, 0744)
+  err = os.MkdirAll("/opt/blog-api/posts/" + slug, 0744)
   if err != nil {
 		log.Println(err.Error())
   }
 
-  err = ioutil.WriteFile("./posts/" + slug + "/index.md", body, 0644)
+  err = ioutil.WriteFile("/opt/blog-api/posts/" + slug + "/index.md", body, 0644)
 	if err != nil {
 		log.Println(err.Error())
 		w.Header().Set("Content-Type", "text/html")

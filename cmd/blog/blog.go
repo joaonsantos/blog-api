@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/blog-api/server"
+	"github.com/blog-api/pkg/server"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4"

@@ -15,7 +15,7 @@ type Post struct {
 	Title     string    `json:"title"`
 	Summary   string    `json:"summary"`
 	Author    string    `json:"author"`
-	ReadTime  int  `json:"readTime"`
+	ReadTime  int       `json:"readTime"`
 	Date      time.Time `json:"date"`
 }
 
