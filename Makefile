@@ -5,4 +5,4 @@ dev: scripts/run-db.sh
 	./scripts/run-db.sh
 
 clean: 
-	docker rm -f blog-db
+	docker rm -f db backend
