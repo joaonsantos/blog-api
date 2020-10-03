@@ -16,14 +16,14 @@ type Post struct {
 	Summary   string    `json:"summary"`
 	Author    string    `json:"author"`
 	ReadTime  int       `json:"readTime"`
-	Date      time.Time `json:"date"`
+	Date      int64     `json:"dateModified"`
 }
 
 // GetPost queries the database for a post info and returns it as json
 func GetPost(c *pgx.Conn, s string) ([]byte, error) {
 	p := []Post{}
 
-	rows, err := c.Query(context.Background(), "select slug, title, summary, author, readTime, date from posts where slug=$1", s)
+	rows, err := c.Query(context.Background(), "select slug, title, summary, author, readTime, dateModified from posts where slug=$1", s)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func GetPost(c *pgx.Conn, s string) ([]byte, error) {
 	for rows.Next() {
 		var slug, title, summary, author string
     var readTime int
-		var date time.Time
+		var date int64
 
 		err := rows.Scan(&slug, &title, &summary, &author, &readTime, &date)
 		if err != nil {
@@ -50,7 +50,7 @@ func GetPost(c *pgx.Conn, s string) ([]byte, error) {
 func GetPosts(c *pgx.Conn) ([]byte, error) {
 	p := []Post{}
 
-	rows, err := c.Query(context.Background(), "select slug, title, summary, author, readTime, date from posts")
+	rows, err := c.Query(context.Background(), "select slug, title, summary, author, readTime, dateModified from posts")
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func GetPosts(c *pgx.Conn) ([]byte, error) {
 	for rows.Next() {
 		var slug, title, summary, author string
     var readTime int
-		var date time.Time
+		var date int64
 
 		err := rows.Scan(&slug, &title, &summary, &author, &readTime, &date)
 		if err != nil {
@@ -87,7 +87,7 @@ func SubmitPost(c *pgx.Conn, p *Post) error {
   author := p.Author
 
 	readTime := p.ReadTime
-	date := time.Now()
+  date := time.Now().Unix()
   slug := genSlug(title)
 
 	_, err := c.Exec(context.Background(), "insert into posts values ($1,$2,$3,$4,$5,$6)", slug, title, summary, author, readTime, date)
