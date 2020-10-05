@@ -3,24 +3,24 @@ package db
 import (
 	"context"
 	"encoding/json"
+	"net/url"
+	"strings"
 	"time"
-  "strings"
-  "net/url"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type Post struct {
-	Slug      string    `json:"slug"`
-	Title     string    `json:"title"`
-	Summary   string    `json:"summary"`
-	Author    string    `json:"author"`
-	ReadTime  int       `json:"readTime"`
-	Date      int64     `json:"dateModified"`
+	Slug     string `json:"slug"`
+	Title    string `json:"title"`
+	Summary  string `json:"summary"`
+	Author   string `json:"author"`
+	ReadTime int    `json:"readTime"`
+	Date     int64  `json:"dateModified"`
 }
 
 // GetPost queries the database for a post info and returns it as json
-func GetPost(c *pgx.Conn, s string) ([]byte, error) {
+func GetPost(c *pgxpool.Pool, s string) ([]byte, error) {
 	p := []Post{}
 
 	rows, err := c.Query(context.Background(), "select slug, title, summary, author, readTime, dateModified from posts where slug=$1", s)
@@ -30,7 +30,7 @@ func GetPost(c *pgx.Conn, s string) ([]byte, error) {
 
 	for rows.Next() {
 		var slug, title, summary, author string
-    var readTime int
+		var readTime int
 		var date int64
 
 		err := rows.Scan(&slug, &title, &summary, &author, &readTime, &date)
@@ -38,7 +38,7 @@ func GetPost(c *pgx.Conn, s string) ([]byte, error) {
 			return nil, err
 		}
 
-    p = append(p, Post{Slug: slug, Title: title, Summary: summary, Author: author, ReadTime: readTime, Date: date})
+		p = append(p, Post{Slug: slug, Title: title, Summary: summary, Author: author, ReadTime: readTime, Date: date})
 	}
 
 	data, err := json.Marshal(p)
@@ -47,7 +47,7 @@ func GetPost(c *pgx.Conn, s string) ([]byte, error) {
 }
 
 // GetPosts queries the database for posts info and returns them as json
-func GetPosts(c *pgx.Conn) ([]byte, error) {
+func GetPosts(c *pgxpool.Pool) ([]byte, error) {
 	p := []Post{}
 
 	rows, err := c.Query(context.Background(), "select slug, title, summary, author, readTime, dateModified from posts")
@@ -57,7 +57,7 @@ func GetPosts(c *pgx.Conn) ([]byte, error) {
 
 	for rows.Next() {
 		var slug, title, summary, author string
-    var readTime int
+		var readTime int
 		var date int64
 
 		err := rows.Scan(&slug, &title, &summary, &author, &readTime, &date)
@@ -65,7 +65,7 @@ func GetPosts(c *pgx.Conn) ([]byte, error) {
 			return nil, err
 		}
 
-    p = append(p, Post{Slug: slug, Title: title, Summary: summary, Author: author, ReadTime: readTime, Date: date})
+		p = append(p, Post{Slug: slug, Title: title, Summary: summary, Author: author, ReadTime: readTime, Date: date})
 	}
 
 	data, err := json.Marshal(p)
@@ -74,21 +74,21 @@ func GetPosts(c *pgx.Conn) ([]byte, error) {
 }
 
 func genSlug(s string) string {
-  slug := strings.ReplaceAll(s, " ", "-")
-  slug = url.PathEscape(slug)
+	slug := strings.ReplaceAll(s, " ", "-")
+	slug = url.PathEscape(slug)
 
-  return strings.ToLower(slug)
+	return strings.ToLower(slug)
 }
 
 // SubmitPost writes a post info to the database
-func SubmitPost(c *pgx.Conn, p *Post) error {
+func SubmitPost(c *pgxpool.Pool, p *Post) error {
 	title := p.Title
 	summary := p.Summary
-  author := p.Author
+	author := p.Author
 
 	readTime := p.ReadTime
-  date := time.Now().Unix()
-  slug := genSlug(title)
+	date := time.Now().Unix()
+	slug := genSlug(title)
 
 	_, err := c.Exec(context.Background(), "insert into posts values ($1,$2,$3,$4,$5,$6)", slug, title, summary, author, readTime, date)
 	return err

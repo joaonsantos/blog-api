@@ -7,15 +7,15 @@ import (
 	"net/http"
 	"os"
 
-  "github.com/blog-api/pkg/db"
+	"github.com/blog-api/pkg/db"
 	"github.com/gorilla/mux"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 // getPostInfo fetches a post info by post slug
-func getPostInfo(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
-  vars := mux.Vars(r)
-  slug := vars["slug"]
+func getPostInfo(w http.ResponseWriter, r *http.Request, c *pgxpool.Pool) {
+	vars := mux.Vars(r)
+	slug := vars["slug"]
 	post, err := db.GetPost(c, slug)
 	if err != nil {
 		log.Println(err.Error())
@@ -29,7 +29,7 @@ func getPostInfo(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
 }
 
 // getPostsInfo fetches all posts info
-func getPostsInfo(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
+func getPostsInfo(w http.ResponseWriter, r *http.Request, c *pgxpool.Pool) {
 	posts, err := db.GetPosts(c)
 	if err != nil {
 		log.Println(err.Error())
@@ -43,7 +43,7 @@ func getPostsInfo(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
 }
 
 // submitPostInfo submits a post info
-func submitPostInfo(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
+func submitPostInfo(w http.ResponseWriter, r *http.Request, c *pgxpool.Pool) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err.Error())
@@ -67,10 +67,10 @@ func submitPostInfo(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
 }
 
 // getPostContent fetches a post content by post slug
-func getPostContent(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
-  vars := mux.Vars(r)
-  slug := vars["slug"]
-  dat, err := ioutil.ReadFile("/opt/blog-api/posts/" + slug + "/index.md")
+func getPostContent(w http.ResponseWriter, r *http.Request, c *pgxpool.Pool) {
+	vars := mux.Vars(r)
+	slug := vars["slug"]
+	dat, err := ioutil.ReadFile("/opt/blog-api/posts/" + slug + "/index.md")
 	if err != nil {
 		log.Println(err.Error())
 		w.Header().Set("Content-Type", "text/html")
@@ -83,20 +83,20 @@ func getPostContent(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
 }
 
 // postPostContent creates a file with post content given a post slug
-func postPostContent(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
-  vars := mux.Vars(r)
-  slug := vars["slug"]
+func postPostContent(w http.ResponseWriter, r *http.Request, c *pgxpool.Pool) {
+	vars := mux.Vars(r)
+	slug := vars["slug"]
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err.Error())
 	}
 
-  err = os.MkdirAll("/opt/blog-api/posts/" + slug, 0744)
-  if err != nil {
+	err = os.MkdirAll("/opt/blog-api/posts/"+slug, 0744)
+	if err != nil {
 		log.Println(err.Error())
-  }
+	}
 
-  err = ioutil.WriteFile("/opt/blog-api/posts/" + slug + "/index.md", body, 0644)
+	err = ioutil.WriteFile("/opt/blog-api/posts/"+slug+"/index.md", body, 0644)
 	if err != nil {
 		log.Println(err.Error())
 		w.Header().Set("Content-Type", "text/html")
@@ -108,7 +108,6 @@ func postPostContent(w http.ResponseWriter, r *http.Request, c *pgx.Conn) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-
 // notFound handles not found routes
 func notFound(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
@@ -117,7 +116,7 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 }
 
 // RegisterRoutes assigns routes to function handlers
-func RegisterRoutes(r *mux.Router, c *pgx.Conn) {
+func RegisterRoutes(r *mux.Router, c *pgxpool.Pool) {
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]bool{"ok": true})
 	})
@@ -138,7 +137,6 @@ func RegisterRoutes(r *mux.Router, c *pgx.Conn) {
 	api.HandleFunc("/post", func(w http.ResponseWriter, r *http.Request) {
 		submitPostInfo(w, r, c)
 	}).Methods("POST")
-
 
 	api.HandleFunc("/content/{slug}", func(w http.ResponseWriter, r *http.Request) {
 		getPostContent(w, r, c)
