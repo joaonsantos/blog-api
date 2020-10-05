@@ -11,11 +11,18 @@ import (
 	"github.com/blog-api/pkg/server"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 func main() {
-	router := initialize()
+	dbpool, err := pgxpool.Connect(context.Background(), os.Getenv("PG_URL"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		os.Exit(1)
+	}
+	defer dbpool.Close()
+
+	router := initialize(dbpool)
 	loggedRouter := handlers.LoggingHandler(os.Stdout, router)
 
 	srv := &http.Server{
@@ -30,18 +37,10 @@ func main() {
 	log.Fatal(srv.ListenAndServe())
 }
 
-func initialize() *mux.Router {
-	// Create a new router
+func initialize(dbpool *pgxpool.Pool) *mux.Router {
+	// Create a new router and register routes
 	router := mux.NewRouter()
-
-	// Create a new connection to our pg database
-	conn, err := pgx.Connect(context.Background(), os.Getenv("PG_URL"))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
-	}
-
-	server.RegisterRoutes(router, conn)
+	server.RegisterRoutes(router, dbpool)
 
 	return router
 }
