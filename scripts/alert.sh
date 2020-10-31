@@ -1,5 +1,5 @@
 #!/bin/bash
-blogUrl="https://xpto.joaonsantos.dev"
+blogUrl="https://joaonsantos.dev"
 dateNow=$(command date)
 
 if res=$(curl -f --url "$blogUrl"); then
