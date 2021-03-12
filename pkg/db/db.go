@@ -50,7 +50,7 @@ func GetPost(c *pgxpool.Pool, s string) ([]byte, error) {
 func GetPosts(c *pgxpool.Pool) ([]byte, error) {
 	p := []Post{}
 
-	rows, err := c.Query(context.Background(), "select slug, title, summary, author, readTime, dateModified from posts")
+	rows, err := c.Query(context.Background(), "select slug, title, summary, author, readTime, dateModified from posts order by datemodified desc")
 	if err != nil {
 		return nil, err
 	}
