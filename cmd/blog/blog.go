@@ -1,46 +1,32 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"net/http"
+	"flag"
 	"os"
-	"time"
 
-	"github.com/blog-api/pkg/server"
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/blog-api/api/server"
 )
 
-func main() {
-	dbpool, err := pgxpool.Connect(context.Background(), os.Getenv("PG_URL"))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
-	}
-	defer dbpool.Close()
+var serveraddr string
 
-	router := initialize(dbpool)
-	loggedRouter := handlers.LoggingHandler(os.Stdout, router)
+func flagInit() {
+	const (
+		defaultAddr = ":8080"
+		usage       = "the addr the server listens on, eg. \":8080\""
+	)
 
-	srv := &http.Server{
-		Handler: loggedRouter,
-		Addr:    "0.0.0.0:8000",
-		// Good practice to set timeouts to avoid Slowloris attacks.
-		WriteTimeout: time.Second * 15,
-		ReadTimeout:  time.Second * 15,
-		IdleTimeout:  time.Second * 60,
-	}
-	log.Printf("Server started at adress http://%s\n", srv.Addr)
-	log.Fatal(srv.ListenAndServe())
+	flag.StringVar(&serveraddr, "addr", defaultAddr, usage)
+	flag.StringVar(&serveraddr, "a", defaultAddr, usage+"(shorthand)")
 }
 
-func initialize(dbpool *pgxpool.Pool) *mux.Router {
-	// Create a new router and register routes
-	router := mux.NewRouter()
-	server.RegisterRoutes(router, dbpool)
+func main() {
+	flagInit()
+	flag.Parse()
 
-	return router
+	a := new(server.App)
+	a.Initialize(server.Config{
+		DB_DSN: os.Getenv("DB_DSN"),
+		Log:    true,
+	})
+	a.Run(serveraddr)
 }
