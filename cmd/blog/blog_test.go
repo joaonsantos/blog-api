@@ -35,6 +35,19 @@ func clearTables() {
 	a.DB.Exec("DELETE FROM posts")
 }
 
+func doRequest(r *http.Request) *httptest.ResponseRecorder {
+	rr := httptest.NewRecorder()
+	a.Handler.ServeHTTP(rr, r)
+
+	return rr
+}
+
+func checkResponseCode(t *testing.T, expected int, actual int) {
+	if actual != expected {
+		t.Errorf("Expected response code %v. Got %v.", expected, actual)
+	}
+}
+
 func TestMain(m *testing.M) {
 	a.Initialize(server.Config{DB_DSN: "/tmp/blog.db", Log: false})
 
@@ -47,32 +60,48 @@ func TestMain(m *testing.M) {
 func TestEmptyPosts(t *testing.T) {
 	clearTables()
 
-	req := httptest.NewRequest("GET", "/api/v1/posts", nil)
-	rr := httptest.NewRecorder()
-	a.Handler.ServeHTTP(rr, req)
-	res := rr.Result()
-
-	if res.StatusCode != http.StatusOK {
-		t.Errorf("Expected response code %v. Got %v.", res.StatusCode, http.StatusOK)
-	}
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/posts", nil)
+	rr := doRequest(req)
+	checkResponseCode(t, http.StatusOK, rr.Code)
 }
 
-func TestNonExistentPost(t *testing.T) {
+func TestGetNonExistentPost(t *testing.T) {
 	clearTables()
 
-	req := httptest.NewRequest("GET", "/api/v1/post/test", nil)
-	rr := httptest.NewRecorder()
-	a.Handler.ServeHTTP(rr, req)
-	res := rr.Result()
-
-	if res.StatusCode != http.StatusNotFound {
-		t.Errorf("Expected response code %v. Got %v.", res.StatusCode, http.StatusOK)
-	}
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/post/test", nil)
+	rr := doRequest(req)
+	checkResponseCode(t, http.StatusNotFound, rr.Code)
 
 	var m map[string]interface{}
 	json.Unmarshal(rr.Body.Bytes(), &m)
-	if m["error"] != "post does not exist" {
-		t.Errorf("Expected the 'error' key of the response to be set to 'post does not exist'.")
+	if len(m) != 0 {
+		t.Errorf("Expected the response to be an empty json. Got '%v'.", m)
+	}
+}
+
+func TestUpdateNonExistentPost(t *testing.T) {
+	clearTables()
+
+	postJSON := []byte(`{
+		"summary": "What makes up a test.",
+		"body": "This is the content of the test post."
+	}`)
+
+	req := httptest.NewRequest(
+		http.MethodPatch,
+		"/api/v1/post/programming-is-more-than-syntax",
+		bytes.NewBuffer(postJSON),
+	)
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := doRequest(req)
+	rr.Result()
+	checkResponseCode(t, http.StatusNotFound, rr.Code)
+
+	var m map[string]interface{}
+	json.Unmarshal(rr.Body.Bytes(), &m)
+	if len(m) != 0 {
+		t.Errorf("Expected the response to be an empty json. Got '%v'.", m)
 	}
 }
 
@@ -86,15 +115,16 @@ func TestCreatePost(t *testing.T) {
 		"author": "João Santos"
 	}`)
 
-	req := httptest.NewRequest("POST", "/api/v1/post/test", bytes.NewBuffer(postJSON))
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/api/v1/post/programming-is-more-than-syntax",
+		bytes.NewBuffer(postJSON),
+	)
 	req.Header.Set("Content-Type", "application/json")
-	rr := httptest.NewRecorder()
-	a.Handler.ServeHTTP(rr, req)
-	res := rr.Result()
 
-	if res.StatusCode != http.StatusCreated {
-		t.Errorf("Expected response code %v. Got %v.", res.StatusCode, http.StatusOK)
-	}
+	rr := doRequest(req)
+	rr.Result()
+	checkResponseCode(t, http.StatusCreated, rr.Code)
 
 	var m map[string]interface{}
 	json.Unmarshal(rr.Body.Bytes(), &m)
@@ -102,7 +132,39 @@ func TestCreatePost(t *testing.T) {
 		t.Errorf("Expected the post id to be 'programming-is-more-than-syntax'. Got '%v'.", m["id"])
 	}
 
-	if m["readTime"] != 0 {
+	if m["readTime"] != 1 {
 		t.Errorf("Expected the post read time to be '0'. Got '%v'.", m["readTime"])
+	}
+}
+
+func TestUpdatePost(t *testing.T) {
+	postJSON := []byte(`{
+		"summary": "What makes up a test.",
+		"body": "This is the content of the test post."
+	}`)
+
+	req := httptest.NewRequest(
+		http.MethodPatch,
+		"/api/v1/post/programming-is-more-than-syntax",
+		bytes.NewBuffer(postJSON),
+	)
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := doRequest(req)
+	rr.Result()
+	checkResponseCode(t, http.StatusOK, rr.Code)
+
+	var m map[string]interface{}
+	json.Unmarshal(rr.Body.Bytes(), &m)
+	if m["id"] != "programming-is-more-than-syntax" {
+		t.Errorf("Expected the post id to be 'programming-is-more-than-syntax'. Got '%v'.", m["id"])
+	}
+
+	if m["summary"] != "What makes up a test." {
+		t.Errorf("Expected the post id to be 'What makes up a test.'. Got '%v'.", m["summary"])
+	}
+
+	if m["body"] != "This is the content of the test post." {
+		t.Errorf("Expected the post id to be 'This is the content of the test post.'. Got '%v'.", m["body"])
 	}
 }
