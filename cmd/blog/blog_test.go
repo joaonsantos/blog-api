@@ -37,7 +37,7 @@ func clearTables() {
 
 func doRequest(r *http.Request) *httptest.ResponseRecorder {
 	rr := httptest.NewRecorder()
-	a.Handler.ServeHTTP(rr, r)
+	a.Router.ServeHTTP(rr, r)
 
 	return rr
 }
@@ -49,7 +49,7 @@ func checkResponseCode(t *testing.T, expected int, actual int) {
 }
 
 func TestMain(m *testing.M) {
-	a.Initialize(server.Config{DB_DSN: "/tmp/blog.db", Log: false})
+	a = server.NewApp(&server.Config{DB_DSN: "/tmp/blog.db", Log: false})
 
 	initTables()
 	code := m.Run()
