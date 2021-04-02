@@ -13,7 +13,7 @@ SERVER_ADDR :=
 #  run
 .PHONY: run
 run:
-	$Qgo run ./cmd/blog/blog.go $(SERVER_ADDR)
+	$QDB_DSN="./blog.db" go run ./cmd/blog/blog.go $(SERVER_ADDR)
 
 # ------------------------------------------------------------------------------
 #  test

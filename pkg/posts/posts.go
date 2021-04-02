@@ -20,7 +20,7 @@ type Post struct {
 type Posts []Post
 
 // newPost creates a new Post and returns it
-func newPost(title, summary, body, author string) Post {
+func NewPost(title, summary, body, author string) Post {
 	p := Post{
 		Title:   title,
 		Body:    body,
@@ -36,6 +36,6 @@ func newPost(title, summary, body, author string) Post {
 	return p
 }
 
-func getPosts(db *sql.DB, start, count int) (Posts, error) {
+func GetPosts(db *sql.DB, start, count int) (Posts, error) {
 	return nil, errors.New("not implemented")
 }
