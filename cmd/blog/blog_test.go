@@ -95,7 +95,6 @@ func TestUpdateNonExistentPost(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 
 	rr := doRequest(req)
-	rr.Result()
 	checkResponseCode(t, http.StatusNotFound, rr.Code)
 
 	var m map[string]interface{}
@@ -123,7 +122,6 @@ func TestCreatePost(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 
 	rr := doRequest(req)
-	rr.Result()
 	checkResponseCode(t, http.StatusCreated, rr.Code)
 
 	var m map[string]interface{}
@@ -151,7 +149,6 @@ func TestUpdatePost(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 
 	rr := doRequest(req)
-	rr.Result()
 	checkResponseCode(t, http.StatusOK, rr.Code)
 
 	var m map[string]interface{}
