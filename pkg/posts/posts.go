@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+type Posts []Post
+
 type Post struct {
 	ID         string `json:"id"`
 	Title      string `json:"title"`
@@ -17,9 +19,36 @@ type Post struct {
 	CreateDate int64  `json:"createDate"`
 }
 
-type Posts []Post
+func (p *Post) GetPost(db *sql.DB) error {
+	return db.QueryRow("select * from posts where id=$1", p.ID).Scan(
+		&p.ID,
+		&p.Title,
+		&p.Body,
+		&p.Summary,
+		&p.Author,
+		&p.ReadTime,
+		&p.CreateDate,
+	)
+}
+
+func (p *Post) UpdatePost(db *sql.DB) error {
+	_, err := db.Exec(
+		"UPDATE products SET body=$1, summary=$2 , readTime=$3 WHERE id=$4",
+		p.Body,
+		p.Summary,
+		p.ReadTime,
+		p.ID,
+	)
+
+	return err
+}
+
+func (p *Post) CreatePost(db *sql.DB) error {
+	return errors.New("not implemented")
+}
 
 // newPost creates a new Post and returns it
+// TODO remove
 func NewPost(title, summary, body, author string) Post {
 	p := Post{
 		Title:   title,
