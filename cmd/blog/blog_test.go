@@ -10,20 +10,20 @@ import (
 	"os"
 	"testing"
 
-	"github.com/blog-api/api/server"
+	"github.com/joaonsantos/blog-api/api/server"
 )
 
 var a server.App
 
 const tableCreationStmt = `create table if not exists posts (
-	id               text         not null,
-	title            text         not null,
-	body             text         not null,
-	summary          text         not null,
-	author           text         not null,
-	readTime         integer      not null,
-	dateModified     integer      not null,
-	constraint posts_pkey primary key (id)
+	id           text         not null,
+	title        varchar(256) not null,
+	body         text         not null,
+	summary      varchar(256) not null,
+	author       varchar(128) not null,
+	readTime     integer      not null,
+	createDate   integer      not null,
+	constraint   posts_pkey   primary key (id)
   );`
 
 func initTables() {
@@ -38,15 +38,15 @@ func clearTables() {
 
 func addPosts(count int) {
 	for i := 0; i < count; i++ {
-		a.DB.Exec(`insert into posts(id, title, body, summary, author, readTime, dateModified)
+		a.DB.Exec(`insert into posts(id, title, body, summary, author, readTime)
 		values($1,$2,$3,$4,$5,$6,$7)`,
 			fmt.Sprintf("test-%v", i),
 			fmt.Sprintf("Test %v", i),
 			fmt.Sprintf("Test Content %v", i),
 			fmt.Sprintf("Summary %v", i),
 			"Test Author",
-			1,
-			1617382428,
+			1+i,
+			i,
 		)
 	}
 }
@@ -58,10 +58,19 @@ func doRequest(r *http.Request) *httptest.ResponseRecorder {
 	return rr
 }
 
-func checkResponseCode(t *testing.T, expected int, actual int) {
-	if actual != expected {
+func checkResponseError(t *testing.T, payload map[string]interface{}) {
+	if err, ok := payload["error"]; ok {
+		t.Errorf("error '%v'.", err)
+	}
+}
+
+func checkResponseCode(t *testing.T, expected int, actual int) bool {
+	isErrorCode := actual != expected
+	if isErrorCode {
 		t.Errorf("Expected response code %v. Got %v.", expected, actual)
 	}
+
+	return isErrorCode
 }
 
 func TestMain(m *testing.M) {
@@ -71,6 +80,46 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 	clearTables()
 	os.Exit(code)
+}
+
+func TestCreatePost(t *testing.T) {
+	clearTables()
+
+	postJSON := []byte(`{
+		"title": "Programming is More Than Syntax",
+		"summary": "What makes up a programming language.",
+		"body": "This is the content of the post.",
+		"author": "João Santos"
+	}`)
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/api/v1/post",
+		bytes.NewBuffer(postJSON),
+	)
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := doRequest(req)
+	isErrorCode := checkResponseCode(t, http.StatusCreated, rr.Code)
+
+	var m map[string]interface{}
+	json.Unmarshal(rr.Body.Bytes(), &m)
+
+	if isErrorCode {
+		checkResponseError(t, m)
+	}
+
+	if id := m["id"]; id != "programming-is-more-than-syntax" {
+		t.Errorf("expected the post id to be 'programming-is-more-than-syntax'. Got '%v'.", id)
+	}
+
+	if readTime := m["readTime"]; readTime != 1.0 {
+		t.Errorf("expected the post read time to be '1'. Got '%v'.", readTime)
+	}
+
+	if _, ok := m["createDate"]; !ok {
+		t.Errorf("expected response to contain a 'createDate' field.")
+	}
 }
 
 func TestEmptyPosts(t *testing.T) {
@@ -150,37 +199,6 @@ func TestUpdateNonExistentPost(t *testing.T) {
 	json.Unmarshal(rr.Body.Bytes(), &m)
 	if len(m) != 0 {
 		t.Errorf("Expected the response to be an empty json. Got '%v'.", m)
-	}
-}
-
-func TestCreatePost(t *testing.T) {
-	clearTables()
-
-	postJSON := []byte(`{
-		"title": "Programming is More Than Syntax",
-		"summary": "What makes up a programming language.",
-		"body": "This is the content of the post."
-		"author": "João Santos"
-	}`)
-
-	req := httptest.NewRequest(
-		http.MethodPost,
-		"/api/v1/post/programming-is-more-than-syntax",
-		bytes.NewBuffer(postJSON),
-	)
-	req.Header.Set("Content-Type", "application/json")
-
-	rr := doRequest(req)
-	checkResponseCode(t, http.StatusCreated, rr.Code)
-
-	var m map[string]interface{}
-	json.Unmarshal(rr.Body.Bytes(), &m)
-	if m["id"] != "programming-is-more-than-syntax" {
-		t.Errorf("Expected the post id to be 'programming-is-more-than-syntax'. Got '%v'.", m["id"])
-	}
-
-	if m["readTime"] != 1 {
-		t.Errorf("Expected the post read time to be '1'. Got '%v'.", m["readTime"])
 	}
 }
 
