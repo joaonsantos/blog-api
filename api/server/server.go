@@ -36,7 +36,7 @@ func NewApp(c *Config) App {
 	}
 	a.Router = mux.NewRouter()
 
-	// TODO register routes
+	a.RegisterRoutes()
 
 	return a
 }

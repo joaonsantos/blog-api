@@ -4,7 +4,7 @@ import (
 	"flag"
 	"os"
 
-	"github.com/blog-api/api/server"
+	"github.com/joaonsantos/blog-api/api/server"
 )
 
 func main() {

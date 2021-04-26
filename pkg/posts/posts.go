@@ -2,9 +2,10 @@ package posts
 
 import (
 	"database/sql"
-	"errors"
 	"strings"
 	"time"
+
+	"github.com/joaonsantos/blog-api/pkg/math"
 )
 
 type Posts []Post
@@ -20,8 +21,12 @@ type Post struct {
 }
 
 func (p *Post) GetPost(db *sql.DB) error {
-	return db.QueryRow("select * from posts where id=$1", p.ID).Scan(
-		&p.ID,
+	row := db.QueryRow(
+		`select title, body, summary, author, readTime, createDate from posts where id=$1`,
+		p.ID,
+	)
+
+	return row.Scan(
 		&p.Title,
 		&p.Body,
 		&p.Summary,
@@ -33,7 +38,7 @@ func (p *Post) GetPost(db *sql.DB) error {
 
 func (p *Post) UpdatePost(db *sql.DB) error {
 	_, err := db.Exec(
-		"UPDATE products SET body=$1, summary=$2 , readTime=$3 WHERE id=$4",
+		`update products set body=$1, summary=$2, readTime=$3 where id=$4`,
 		p.Body,
 		p.Summary,
 		p.ReadTime,
@@ -43,28 +48,63 @@ func (p *Post) UpdatePost(db *sql.DB) error {
 	return err
 }
 
-func (p *Post) CreatePost(db *sql.DB) error {
-	return errors.New("not implemented")
+func calculatePostReadTime(body string) int {
+	return math.Max(1, int(len(body)/200))
 }
 
-// newPost creates a new Post and returns it
-// TODO remove
-func NewPost(title, summary, body, author string) Post {
-	p := Post{
-		Title:   title,
-		Body:    body,
-		Summary: summary,
-		Author:  author,
-	}
-
+func (p *Post) prepareNewPost() {
 	titleWords := strings.Split(strings.ToLower(p.Title), " ")
 	p.ID = strings.Join(titleWords, "-")
-	p.ReadTime = int(len(p.Body) / 200)
+	p.ReadTime = calculatePostReadTime(p.Body)
 	p.CreateDate = time.Now().Unix()
+}
 
-	return p
+func (p *Post) CreatePost(db *sql.DB) error {
+	p.prepareNewPost()
+
+	row := db.QueryRow(
+		`insert into posts(id, title, body, summary, author, readTime, createDate)
+		values($1, $2, $3, $4, $5, $6, $7) returning id, readTime, createDate`,
+		p.ID,
+		p.Title,
+		p.Body,
+		p.Summary,
+		p.Author,
+		p.ReadTime,
+		p.CreateDate,
+	)
+
+	return row.Scan(&p.ID, &p.ReadTime, &p.CreateDate)
 }
 
 func GetPosts(db *sql.DB, start, count int) (Posts, error) {
-	return nil, errors.New("not implemented")
+	rows, err := db.Query(
+		`select id, title, body, summary, author, readTime, createTime from posts limit $1 offset $2`,
+		count,
+		start,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var posts Posts
+	for rows.Next() {
+		var p Post
+		rows.Scan(
+			&p.ID,
+			&p.Title,
+			&p.Body,
+			&p.Summary,
+			&p.Author,
+			&p.ReadTime,
+			&p.CreateDate,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		posts = append(posts, p)
+	}
+
+	return posts, nil
 }
