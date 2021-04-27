@@ -34,8 +34,8 @@ func NewApp(c *Config) App {
 	if err != nil {
 		log.Fatalf("could not start app - reason: %v", err)
 	}
-	a.Router = mux.NewRouter()
 
+	a.Router = mux.NewRouter()
 	a.RegisterRoutes()
 
 	return a
@@ -44,6 +44,7 @@ func NewApp(c *Config) App {
 func (a *App) Run(addr string) {
 	h := handlers.LoggingHandler(os.Stdout, a.Router)
 
+	// if log option is set to false, simply use mux router
 	if !a.Config.Log {
 		h = a.Router
 	}
