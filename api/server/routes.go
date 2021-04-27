@@ -85,9 +85,20 @@ func (a *App) patchPost(w http.ResponseWriter, r *http.Request) {
 	sendResponse(w, http.StatusOK, p)
 }
 
+func (a *App) getPosts(w http.ResponseWriter, r *http.Request) {
+	const postLimit = 100
+	posts, err := posts.GetPosts(a.DB, 0, postLimit)
+	if err != nil {
+		sendErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	sendResponse(w, http.StatusOK, posts)
+}
+
 func (a *App) RegisterRoutes() {
 	a.Router.HandleFunc("/api/v1/post", a.createPost).Methods("POST")
 	a.Router.HandleFunc("/api/v1/post/{id:[0-9A-Za-z-]+}", a.getPost).Methods("GET")
 	a.Router.HandleFunc("/api/v1/post/{id:[0-9A-Za-z-]+}", a.patchPost).Methods("PATCH")
-	// a.Router.HandleFunc("/api/v1/posts", a.getProducts).Methods("GET")
+	a.Router.HandleFunc("/api/v1/posts", a.getPosts).Methods("GET")
 }

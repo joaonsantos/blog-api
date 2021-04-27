@@ -77,7 +77,7 @@ func (p *Post) PatchPost(db *sql.DB) error {
 
 func GetPosts(db *sql.DB, start, count int) (Posts, error) {
 	rows, err := db.Query(
-		`select id, title, body, summary, author, readTime, createTime from posts limit $1 offset $2`,
+		`select id, title, body, summary, author, readTime, createDate from posts limit $1 offset $2`,
 		count,
 		start,
 	)
