@@ -1,9 +1,11 @@
 package server
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/joaonsantos/blog-api/pkg/posts"
 )
 
@@ -36,9 +38,31 @@ func (a *App) createPost(w http.ResponseWriter, r *http.Request) {
 	sendResponse(w, http.StatusCreated, p)
 }
 
+func (a *App) getPost(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, ok := vars["id"]
+	if !ok {
+		sendErrorResponse(w, http.StatusBadRequest, "Please specify id as a url variable")
+		return
+	}
+
+	p := posts.Post{ID: id}
+	if err := p.GetPost(a.DB); err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			sendErrorResponse(w, http.StatusNotFound, "Post does not exist")
+		default:
+			sendErrorResponse(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+
+	sendResponse(w, http.StatusOK, p)
+}
+
 func (a *App) RegisterRoutes() {
-	// a.Router.HandleFunc("/api/v1/posts", a.getProducts).Methods("GET")
 	a.Router.HandleFunc("/api/v1/post", a.createPost).Methods("POST")
-	// a.Router.HandleFunc("/api/v1/post/{id:[0-9A-Za-z]+}", a.getProduct).Methods("GET")
+	a.Router.HandleFunc("/api/v1/post/{id:[0-9A-Za-z-]+}", a.getPost).Methods("GET")
+	// a.Router.HandleFunc("/api/v1/posts", a.getProducts).Methods("GET")
 	// a.Router.HandleFunc("/api/v1/post/{id:[0-9A-Za-z]+}", a.updateProduct).Methods("PUT")
 }

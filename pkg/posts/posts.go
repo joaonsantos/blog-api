@@ -20,6 +20,31 @@ type Post struct {
 	CreateDate int64  `json:"createDate"`
 }
 
+func (p *Post) prepareNewPost() {
+	titleWords := strings.Split(strings.ToLower(p.Title), " ")
+	p.ID = strings.Join(titleWords, "-")
+	p.ReadTime = calculatePostReadTime(p.Body)
+	p.CreateDate = time.Now().Unix()
+}
+
+func (p *Post) CreatePost(db *sql.DB) error {
+	p.prepareNewPost()
+
+	row := db.QueryRow(
+		`insert into posts(id, title, body, summary, author, readTime, createDate)
+		values($1, $2, $3, $4, $5, $6, $7) returning id, readTime, createDate`,
+		p.ID,
+		p.Title,
+		p.Body,
+		p.Summary,
+		p.Author,
+		p.ReadTime,
+		p.CreateDate,
+	)
+
+	return row.Scan(&p.ID, &p.ReadTime, &p.CreateDate)
+}
+
 func (p *Post) GetPost(db *sql.DB) error {
 	row := db.QueryRow(
 		`select title, body, summary, author, readTime, createDate from posts where id=$1`,
@@ -46,35 +71,6 @@ func (p *Post) UpdatePost(db *sql.DB) error {
 	)
 
 	return err
-}
-
-func calculatePostReadTime(body string) int {
-	return math.Max(1, int(len(body)/200))
-}
-
-func (p *Post) prepareNewPost() {
-	titleWords := strings.Split(strings.ToLower(p.Title), " ")
-	p.ID = strings.Join(titleWords, "-")
-	p.ReadTime = calculatePostReadTime(p.Body)
-	p.CreateDate = time.Now().Unix()
-}
-
-func (p *Post) CreatePost(db *sql.DB) error {
-	p.prepareNewPost()
-
-	row := db.QueryRow(
-		`insert into posts(id, title, body, summary, author, readTime, createDate)
-		values($1, $2, $3, $4, $5, $6, $7) returning id, readTime, createDate`,
-		p.ID,
-		p.Title,
-		p.Body,
-		p.Summary,
-		p.Author,
-		p.ReadTime,
-		p.CreateDate,
-	)
-
-	return row.Scan(&p.ID, &p.ReadTime, &p.CreateDate)
 }
 
 func GetPosts(db *sql.DB, start, count int) (Posts, error) {
@@ -107,4 +103,8 @@ func GetPosts(db *sql.DB, start, count int) (Posts, error) {
 	}
 
 	return posts, nil
+}
+
+func calculatePostReadTime(body string) int {
+	return math.Max(1, int(len(body)/200))
 }
