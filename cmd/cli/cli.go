@@ -20,7 +20,7 @@ const tableCreationStmt = `create table if not exists posts (
   );`
 
 func main() {
-	db := flag.String("db", ":8080", "the db dsn, eg. \"blog.db\"")
+	db := flag.String("db", ":8000", "the db dsn, eg. \"blog.db\"")
 	flag.Parse()
 
 	a := server.NewApp(&server.Config{
