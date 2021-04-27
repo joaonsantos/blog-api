@@ -61,9 +61,11 @@ func (p *Post) GetPost(db *sql.DB) error {
 	)
 }
 
-func (p *Post) UpdatePost(db *sql.DB) error {
+func (p *Post) PatchPost(db *sql.DB) error {
+	p.ReadTime = calculatePostReadTime(p.Body)
+
 	_, err := db.Exec(
-		`update products set body=$1, summary=$2, readTime=$3 where id=$4`,
+		`update posts set body=$1, summary=$2, readTime=$3 where id=$4`,
 		p.Body,
 		p.Summary,
 		p.ReadTime,
