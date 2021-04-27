@@ -38,7 +38,7 @@ func clearTables() {
 
 func addPosts(count int) {
 	for i := 0; i < count; i++ {
-		a.DB.Exec(`insert into posts(id, title, body, summary, author, readTime)
+		a.DB.Exec(`insert into posts(id, title, body, summary, author, readTime, createDate)
 		values($1,$2,$3,$4,$5,$6,$7)`,
 			fmt.Sprintf("test-%v", i),
 			fmt.Sprintf("Test %v", i),
@@ -47,6 +47,7 @@ func addPosts(count int) {
 			"Test Author",
 			1+i,
 			i,
+			0,
 		)
 	}
 }
@@ -122,14 +123,6 @@ func TestCreatePost(t *testing.T) {
 	}
 }
 
-func TestEmptyPosts(t *testing.T) {
-	clearTables()
-
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/posts", nil)
-	rr := doRequest(req)
-	checkResponseCode(t, http.StatusOK, rr.Code)
-}
-
 func TestGetNonExistentPost(t *testing.T) {
 	clearTables()
 
@@ -139,41 +132,34 @@ func TestGetNonExistentPost(t *testing.T) {
 
 	var m map[string]interface{}
 	json.Unmarshal(rr.Body.Bytes(), &m)
-	if len(m) != 0 {
-		t.Errorf("Expected the response to be an empty json. Got '%v'.", m)
+	if err, ok := m["error"]; ok {
+		if err != "Post does not exist" {
+			t.Errorf("Expected the error to be 'Post does not exist'. Got '%v'.", err)
+		}
 	}
 }
 
-func TestGetPosts(t *testing.T) {
+func TestGetPost(t *testing.T) {
 	clearTables()
-	addPosts(2)
+	addPosts(1)
 
 	req := httptest.NewRequest(
 		http.MethodGet,
-		"/api/v1/posts/",
+		"/api/v1/post/test-0",
 		nil,
 	)
 
 	rr := doRequest(req)
 	checkResponseCode(t, http.StatusOK, rr.Code)
 
-	var l []map[string]interface{}
-	json.Unmarshal(rr.Body.Bytes(), &l)
-
-	if s := len(l); s != 2 {
-		t.Errorf("Expected to get two posts. Got '%v'.", s)
+	var m map[string]interface{}
+	json.Unmarshal(rr.Body.Bytes(), &m)
+	if id := m["id"]; id != "test-0" {
+		t.Errorf("Expected the post id to be 'test-0'. Got '%v'.", id)
 	}
 
-	for i := range l {
-		m := l[i]
-
-		if m["id"] != fmt.Sprintf("test-%v", i) {
-			t.Errorf("Expected the post id to be 'test-1'. Got '%v'.", m["id"])
-		}
-
-		if m["readTime"] != 1 {
-			t.Errorf("Expected the post read time to be '1'. Got '%v'.", m["readTime"])
-		}
+	if readTime := m["readTime"]; readTime != 1.0 {
+		t.Errorf("expected the post read time to be '1'. Got '%v'.", readTime)
 	}
 }
 
@@ -199,30 +185,6 @@ func TestUpdateNonExistentPost(t *testing.T) {
 	json.Unmarshal(rr.Body.Bytes(), &m)
 	if len(m) != 0 {
 		t.Errorf("Expected the response to be an empty json. Got '%v'.", m)
-	}
-}
-
-func TestGetPost(t *testing.T) {
-	clearTables()
-	addPosts(1)
-
-	req := httptest.NewRequest(
-		http.MethodGet,
-		"/api/v1/post/test-1",
-		nil,
-	)
-
-	rr := doRequest(req)
-	checkResponseCode(t, http.StatusOK, rr.Code)
-
-	var m map[string]interface{}
-	json.Unmarshal(rr.Body.Bytes(), &m)
-	if m["id"] != "test-1" {
-		t.Errorf("Expected the post id to be 'test-1'. Got '%v'.", m["id"])
-	}
-
-	if m["readTime"] != 1 {
-		t.Errorf("Expected the post read time to be '1'. Got '%v'.", m["readTime"])
 	}
 }
 
@@ -257,5 +219,46 @@ func TestUpdatePost(t *testing.T) {
 
 	if m["body"] != "This is the content of the test post." {
 		t.Errorf("Expected the post id to be 'This is the content of the test post.'. Got '%v'.", m["body"])
+	}
+}
+
+func TestEmptyPosts(t *testing.T) {
+	clearTables()
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/posts", nil)
+	rr := doRequest(req)
+	checkResponseCode(t, http.StatusOK, rr.Code)
+}
+
+func TestGetPosts(t *testing.T) {
+	clearTables()
+	addPosts(2)
+
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/api/v1/posts/",
+		nil,
+	)
+
+	rr := doRequest(req)
+	checkResponseCode(t, http.StatusOK, rr.Code)
+
+	var l []map[string]interface{}
+	json.Unmarshal(rr.Body.Bytes(), &l)
+
+	if s := len(l); s != 2 {
+		t.Errorf("Expected to get two posts. Got '%v'.", s)
+	}
+
+	for i := range l {
+		m := l[i]
+
+		if m["id"] != fmt.Sprintf("test-%v", i) {
+			t.Errorf("Expected the post id to be 'test-1'. Got '%v'.", m["id"])
+		}
+
+		if m["readTime"] != 1 {
+			t.Errorf("Expected the post read time to be '1'. Got '%v'.", m["readTime"])
+		}
 	}
 }
