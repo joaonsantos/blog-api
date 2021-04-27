@@ -163,32 +163,7 @@ func TestGetPost(t *testing.T) {
 	}
 }
 
-func TestUpdateNonExistentPost(t *testing.T) {
-	clearTables()
-
-	postJSON := []byte(`{
-		"summary": "What makes up a test.",
-		"body": "This is the content of the test post."
-	}`)
-
-	req := httptest.NewRequest(
-		http.MethodPatch,
-		"/api/v1/post/programming-is-more-than-syntax",
-		bytes.NewBuffer(postJSON),
-	)
-	req.Header.Set("Content-Type", "application/json")
-
-	rr := doRequest(req)
-	checkResponseCode(t, http.StatusNotFound, rr.Code)
-
-	var m map[string]interface{}
-	json.Unmarshal(rr.Body.Bytes(), &m)
-	if len(m) != 0 {
-		t.Errorf("Expected the response to be an empty json. Got '%v'.", m)
-	}
-}
-
-func TestUpdatePost(t *testing.T) {
+func TestPatchPost(t *testing.T) {
 	clearTables()
 	addPosts(1)
 
@@ -199,7 +174,7 @@ func TestUpdatePost(t *testing.T) {
 
 	req := httptest.NewRequest(
 		http.MethodPatch,
-		"/api/v1/post/test-1",
+		"/api/v1/post/test-0",
 		bytes.NewBuffer(postJSON),
 	)
 	req.Header.Set("Content-Type", "application/json")
@@ -207,18 +182,21 @@ func TestUpdatePost(t *testing.T) {
 	rr := doRequest(req)
 	checkResponseCode(t, http.StatusOK, rr.Code)
 
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/post/test-0", nil)
+	rr = doRequest(req)
 	var m map[string]interface{}
 	json.Unmarshal(rr.Body.Bytes(), &m)
-	if m["id"] != "test-1" {
-		t.Errorf("Expected the post id to be 'test-1'. Got '%v'.", m["id"])
+
+	if id := m["id"]; id != "test-0" {
+		t.Errorf("Expected the post id to be 'test-0'. Got '%v'.", id)
 	}
 
-	if m["summary"] != "What makes up a test." {
-		t.Errorf("Expected the post id to be 'What makes up a test.'. Got '%v'.", m["summary"])
+	if summary := m["summary"]; summary != "What makes up a test." {
+		t.Errorf("Expected the post summary to be 'What makes up a test.'. Got '%v'.", summary)
 	}
 
-	if m["body"] != "This is the content of the test post." {
-		t.Errorf("Expected the post id to be 'This is the content of the test post.'. Got '%v'.", m["body"])
+	if body := m["body"]; body != "This is the content of the test post." {
+		t.Errorf("Expected the post body to be 'This is the content of the test post.'. Got '%v'.", body)
 	}
 }
 
