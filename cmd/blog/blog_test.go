@@ -205,7 +205,18 @@ func TestEmptyPosts(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/posts", nil)
 	rr := doRequest(req)
-	checkResponseCode(t, http.StatusOK, rr.Code)
+	isErrorCode := checkResponseCode(t, http.StatusOK, rr.Code)
+
+	var m map[string]interface{}
+	json.Unmarshal(rr.Body.Bytes(), &m)
+
+	if isErrorCode {
+		checkResponseError(t, m)
+	}
+
+	if size := len(m); size != 0 {
+		t.Errorf("expected response to be empty, got response with %v items", size)
+	}
 }
 
 func TestGetPosts(t *testing.T) {
@@ -214,7 +225,7 @@ func TestGetPosts(t *testing.T) {
 
 	req := httptest.NewRequest(
 		http.MethodGet,
-		"/api/v1/posts/",
+		"/api/v1/posts",
 		nil,
 	)
 
@@ -231,11 +242,14 @@ func TestGetPosts(t *testing.T) {
 	for i := range l {
 		m := l[i]
 
-		if m["id"] != fmt.Sprintf("test-%v", i) {
-			t.Errorf("Expected the post id to be 'test-1'. Got '%v'.", m["id"])
+		offset := float64(i)
+		expectedId := fmt.Sprintf("test-%v", offset)
+		if id := m["id"]; id != expectedId {
+			t.Errorf("Expected the post id to be 'test-%v'. Got '%v'.", offset, m["id"])
 		}
 
-		if m["readTime"] != 1 {
+		expectedReadTime := 1.0 + offset
+		if readTime := m["readTime"]; readTime != expectedReadTime {
 			t.Errorf("Expected the post read time to be '1'. Got '%v'.", m["readTime"])
 		}
 	}
