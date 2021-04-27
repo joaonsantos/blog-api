@@ -37,3 +37,14 @@ test-unit:
 	@echo "==> Running unit tests <=="
 	@echo
 	$Qgo test $(GOFLAGS) $(PKGS) $(TESTFLAGS)
+
+
+docker: init
+	$Qdocker rm -f blog
+	$Qdocker build -t blog -f docker/Dockerfile .
+	$Qdocker run --rm -it \
+	--mount type=bind,src="$(pwd)"/blog.db,target=/blog.db \
+	-p 8000:8000 --name blog -d blog
+	@echo
+	@echo "server started at http://127.0.0.1:8000"
+	@echo

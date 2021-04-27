@@ -6,13 +6,13 @@ COPY go.* ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=1 GOOS=linux go build -a -o /server /app/cmd/blog/blog.go
+RUN CGO_ENABLED=1 GOOS=linux \
+    go build -o /server /app/cmd/blog/blog.go
 
-FROM alpine:3.12
-RUN apk --no-cache add ca-certificates
+FROM debian:bullseye-slim
 
 WORKDIR /
 COPY --from=builder /server /
 
 EXPOSE 8000
-CMD ["/server"]
+CMD ["./server"]
