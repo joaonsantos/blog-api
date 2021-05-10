@@ -32,7 +32,12 @@ func NewApp(c *Config) App {
 	var err error
 	a.DB, err = sql.Open("sqlite3", c.DB_DSN) // imported driver through _ import
 	if err != nil {
-		log.Fatalf("could not start app - reason: %v", err)
+		log.Fatalf("error initializing db: %v", err)
+	}
+
+	err = a.DB.Ping()
+	if err != nil {
+		log.Fatalf("error opening db: %v", err)
 	}
 
 	a.Router = mux.NewRouter()

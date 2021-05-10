@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/joaonsantos/blog-api/api/server"
 )
@@ -20,16 +21,32 @@ const tableCreationStmt = `create table if not exists posts (
   );`
 
 func main() {
-	db := flag.String("db", ":8080", "the db dsn, eg. \"blog.db\"")
+	var dsn string
+	flag.StringVar(&dsn, "db", "", "the db dsn, eg. \"file:blog.db?cache=shared\"")
 	flag.Parse()
 
+	if dsn == "" {
+		err := "missing required -db flag, run with -help flag to check usage"
+		fmt.Fprintf(os.Stderr, "error starting server: %v\n", err)
+		os.Exit(1)
+	}
+
 	a := server.NewApp(&server.Config{
-		DB_DSN: *db,
+		DB_DSN: dsn,
 		Log:    true,
 	})
 
 	if _, err := a.DB.Exec(tableCreationStmt); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to initialize tables")
+		fmt.Fprintf(os.Stderr, "error starting server: %v\n", err)
+		os.Exit(1)
 	}
 
+	dsnPartial := strings.Split(dsn, ":")[1]
+
+	dbName := dsnPartial
+	if strings.Contains(dsnPartial, "?") {
+		dbName = strings.Split(dsnPartial, "?")[0]
+	}
+
+	fmt.Printf("✨ created db '%v' successfully \n\n", dbName)
 }
