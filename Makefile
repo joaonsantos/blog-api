@@ -9,16 +9,16 @@ SERVER_CMD_PATH := ./cmd/blog/blog.go
 CLI_CMD_PATH := ./cmd/cli/cli.go
 
 # server options
-SERVER_ADDR :=
+SERVER_ADDR := :8080
 
 # db options
-DB_DSN := ./blog.db
+DB_DSN := file:blog.db?cache=shared
 
 # ------------------------------------------------------------------------------
 #  run
 .PHONY: run
 run:
-	$QDB_DSN=$(DB_DSN) go run $(SERVER_CMD_PATH) $(SERVER_ADDR)
+	$Qgo run $(SERVER_CMD_PATH) -addr $(SERVER_ADDR) -db $(DB_DSN)
 
 # ------------------------------------------------------------------------------
 #  init
