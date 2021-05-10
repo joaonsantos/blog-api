@@ -85,7 +85,7 @@ func GetPosts(db *sql.DB, start, count int) (Posts, error) {
 		return nil, err
 	}
 
-	var posts Posts
+	posts := Posts{}
 	for rows.Next() {
 		var p Post
 		rows.Scan(
