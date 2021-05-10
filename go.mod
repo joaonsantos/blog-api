@@ -1,6 +1,6 @@
 module github.com/joaonsantos/blog-api
 
-go 1.15
+go 1.16
 
 require (
 	github.com/gorilla/handlers v1.5.1
