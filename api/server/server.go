@@ -25,7 +25,7 @@ type App struct {
 	Config *Config
 }
 
-// Initialize bootstraps db connections and registers routes
+// NewApp bootstraps db connections and registers routes
 func NewApp(c *Config) App {
 	a := App{Config: c}
 
@@ -46,6 +46,7 @@ func NewApp(c *Config) App {
 	return a
 }
 
+// Run starts a server running on addr, eg. addr=':8080'
 func (a *App) Run(addr string) {
 	h := handlers.LoggingHandler(os.Stdout, a.Router)
 

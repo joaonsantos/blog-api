@@ -14,11 +14,11 @@ func sendErrorResponse(w http.ResponseWriter, code int, message string) {
 }
 
 func sendResponse(w http.ResponseWriter, code int, payload interface{}) {
-	response, _ := json.Marshal(payload)
+	res, _ := json.Marshal(payload)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	w.Write(response)
+	w.Write(res)
 }
 
 func (a *App) createPost(w http.ResponseWriter, r *http.Request) {
@@ -88,11 +88,11 @@ func (a *App) patchPost(w http.ResponseWriter, r *http.Request) {
 func (a *App) getPosts(w http.ResponseWriter, r *http.Request) {
 	const postLimit = 100
 	posts, err := posts.GetPosts(a.DB, 0, postLimit)
+
 	if err != nil {
 		sendErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-
 	sendResponse(w, http.StatusOK, posts)
 }
 
