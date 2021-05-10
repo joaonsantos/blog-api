@@ -75,7 +75,7 @@ func checkResponseCode(t *testing.T, expected int, actual int) bool {
 }
 
 func TestMain(m *testing.M) {
-	a = server.NewApp(&server.Config{DB_DSN: "/tmp/blog.db", Log: false})
+	a = server.NewApp(&server.Config{DB_DSN: "file::memory?cache=shared", Log: false})
 
 	initTables()
 	code := m.Run()
