@@ -91,7 +91,7 @@ func TestGetNonExistentPosts(t *testing.T) {
 
 	req := httptest.NewRequest(
 		http.MethodGet,
-		"/api/v1/posts",
+		"/api/v1/posts/info",
 		nil,
 	)
 
@@ -122,7 +122,7 @@ func TestGetPosts(t *testing.T) {
 
 	req := httptest.NewRequest(
 		http.MethodGet,
-		"/api/v1/posts",
+		"/api/v1/posts/info",
 		nil,
 	)
 
@@ -158,7 +158,7 @@ func TestGetPosts(t *testing.T) {
 func TestGetNonExistentPost(t *testing.T) {
 	clearTables()
 
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/post/test", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/post/info/test", nil)
 	rr := doRequest(req)
 	result := rr.Result()
 	defer result.Body.Close()
@@ -182,7 +182,7 @@ func TestGetPost(t *testing.T) {
 
 	req := httptest.NewRequest(
 		http.MethodGet,
-		"/api/v1/post/test-0",
+		"/api/v1/post/info/test-0",
 		nil,
 	)
 
@@ -204,6 +204,23 @@ func TestGetPost(t *testing.T) {
 	}
 }
 
+func TestGetPostContent(t *testing.T) {
+	clearTables()
+	addPosts(1)
+
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/api/v1/post/content/test-0",
+		nil,
+	)
+
+	rr := doRequest(req)
+	result := rr.Result()
+	defer result.Body.Close()
+
+	checkResponseCode(t, http.StatusOK, result.StatusCode)
+}
+
 func TestCreatePost(t *testing.T) {
 	clearTables()
 
@@ -216,7 +233,7 @@ func TestCreatePost(t *testing.T) {
 
 	req := httptest.NewRequest(
 		http.MethodPost,
-		"/api/v1/post",
+		"/api/v1/post/info",
 		bytes.NewBuffer(postJSON),
 	)
 	req.Header.Set("Content-Type", "application/json")
@@ -237,11 +254,38 @@ func TestCreatePost(t *testing.T) {
 	if id := m["id"]; id != "programming-is-more-than-syntax" {
 		t.Errorf("expected the post id to be 'programming-is-more-than-syntax'. Got '%v'.", id)
 	}
-	if readTime := m["readTime"]; readTime != 1.0 {
-		t.Errorf("expected the post read time to be '1'. Got '%v'.", readTime)
+	if readTime := m["readTime"]; readTime != 0.0 {
+		t.Errorf("expected the post read time to be '0'. Got '%v'.", readTime)
 	}
 	if _, ok := m["createDate"]; !ok {
 		t.Errorf("expected response to contain a 'createDate' field.")
+	}
+}
+
+func TestSubmitPostContent(t *testing.T) {
+	post, err := os.ReadFile("./post.md")
+	if err != nil {
+		t.Fatalf("unable to open post contents file")
+	}
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/api/v1/post/content/programming-is-more-than-syntax",
+		bytes.NewBuffer(post),
+	)
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := doRequest(req)
+	result := rr.Result()
+	defer result.Body.Close()
+	isErrorCode := checkResponseCode(t, http.StatusOK, result.StatusCode)
+
+	resBody, _ := io.ReadAll(result.Body)
+	var m map[string]interface{}
+	json.Unmarshal(resBody, &m)
+
+	if isErrorCode {
+		checkResponseError(t, m)
 	}
 }
 
@@ -256,7 +300,7 @@ func TestPatchPost(t *testing.T) {
 
 	req := httptest.NewRequest(
 		http.MethodPatch,
-		"/api/v1/post/test-0",
+		"/api/v1/post/info/test-0",
 		bytes.NewBuffer(postJSON),
 	)
 	req.Header.Set("Content-Type", "application/json")
@@ -266,7 +310,7 @@ func TestPatchPost(t *testing.T) {
 	result.Body.Close()
 	checkResponseCode(t, http.StatusOK, result.StatusCode)
 
-	req = httptest.NewRequest(http.MethodGet, "/api/v1/post/test-0", nil)
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/post/info/test-0", nil)
 	rr = doRequest(req)
 	result = rr.Result()
 	defer result.Body.Close()
@@ -289,7 +333,7 @@ func TestPatchPost(t *testing.T) {
 func TestEmptyPosts(t *testing.T) {
 	clearTables()
 
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/posts", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/posts/info", nil)
 	rr := doRequest(req)
 	result := rr.Result()
 	defer result.Body.Close()
