@@ -10,6 +10,8 @@ import (
 
 type Posts []Post
 
+// TODO split into PostInfo and PostContent structs
+
 type Post struct {
 	ID         string `json:"id"`
 	Title      string `json:"title"`
@@ -23,7 +25,6 @@ type Post struct {
 func (p *Post) prepareNewPost() {
 	titleWords := strings.Split(strings.ToLower(p.Title), " ")
 	p.ID = strings.Join(titleWords, "-")
-	p.ReadTime = calculatePostReadTime(p.Body)
 	p.CreateDate = time.Now().Unix()
 }
 
@@ -45,6 +46,20 @@ func (p *Post) CreatePost(db *sql.DB) error {
 	return row.Scan(&p.ID, &p.ReadTime, &p.CreateDate)
 }
 
+func (p *Post) SubmitPostContent(db *sql.DB) error {
+	row := db.QueryRow(
+		`update posts
+		set body=$1, readTime=$2
+		where id=$3
+		returning id, readTime`,
+		p.Body,
+		p.ReadTime,
+		p.ID,
+	)
+
+	return row.Scan(&p.ID, &p.ReadTime)
+}
+
 func (p *Post) GetPost(db *sql.DB) error {
 	row := db.QueryRow(
 		`select title, body, summary, author, readTime, createDate from posts where id=$1`,
@@ -61,8 +76,19 @@ func (p *Post) GetPost(db *sql.DB) error {
 	)
 }
 
+func (p *Post) GetPostContent(db *sql.DB) error {
+	row := db.QueryRow(
+		`select body from posts where id=$1`,
+		p.ID,
+	)
+
+	return row.Scan(
+		&p.Body,
+	)
+}
+
 func (p *Post) PatchPost(db *sql.DB) error {
-	p.ReadTime = calculatePostReadTime(p.Body)
+	p.ReadTime = CalculatePostReadTime(p.Body)
 
 	_, err := db.Exec(
 		`update posts set body=$1, summary=$2, readTime=$3 where id=$4`,
@@ -107,6 +133,13 @@ func GetPosts(db *sql.DB, start, count int) (Posts, error) {
 	return posts, nil
 }
 
-func calculatePostReadTime(body string) int {
-	return math.Max(1, int(len(body)/200))
+func CalculatePostReadTime(body string) int {
+	// TODO
+	// quick workaround, need to parse markdown and take into account
+	// code, images, etc.
+	modifier := 1.0
+	if strings.Contains(body, "```") {
+		modifier = 0.4
+	}
+	return int(float64(math.Max(1, int(len(body)/200))) * modifier)
 }
